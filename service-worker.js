@@ -1,12 +1,15 @@
 // Service Worker for Penak PWA
 const CACHE_NAME = 'penak-v1';
-const OFFLINE_URL = '/';
+const BASE_PATH = '/penak'; // IMPORTANT for GitHub Pages
+const OFFLINE_URL = `${BASE_PATH}/index.html`;
 
 // Files to cache for offline use
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/manifest.json',
+  `${BASE_PATH}/`,
+  `${BASE_PATH}/index.html`,
+  `${BASE_PATH}/manifest.json`,
+  `${BASE_PATH}/icon-192.png`,
+  `${BASE_PATH}/icon-512.png`,
   'https://cdn.jsdelivr.net/gh/rastikerdar/estedad-font@v0.4.1/dist/Estedad-FD.css',
   'https://cdn.tailwindcss.com'
 ];
@@ -17,7 +20,7 @@ self.addEventListener('install', (event) => {
     caches.open(CACHE_NAME)
       .then((cache) => {
         console.log('Opened cache');
-        return cache.addAll(urlsToCache.map(url => new Request(url, {cache: 'reload'})));
+        return cache.addAll(urlsToCache.map(url => new Request(url, { cache: 'reload' })));
       })
       .catch((error) => {
         console.log('Cache failed:', error);
@@ -45,10 +48,8 @@ self.addEventListener('activate', (event) => {
 
 // Fetch event - network first, then cache
 self.addEventListener('fetch', (event) => {
-  // Skip non-GET requests
   if (event.request.method !== 'GET') return;
-  
-  // Skip Google Apps Script API calls (always try network)
+
   if (event.request.url.includes('script.google.com')) {
     event.respondWith(
       fetch(event.request).catch(() => {
@@ -60,28 +61,19 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // For everything else: Network first, fallback to cache
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        // Clone the response
         const responseToCache = response.clone();
-        
-        // Cache the fetched response
         caches.open(CACHE_NAME).then((cache) => {
           cache.put(event.request, responseToCache);
         });
-        
         return response;
       })
       .catch(() => {
-        // Network failed, try cache
         return caches.match(event.request).then((response) => {
-          if (response) {
-            return response;
-          }
-          
-          // If not in cache and it's an HTML page, return offline page
+          if (response) return response;
+
           if (event.request.headers.get('accept').includes('text/html')) {
             return caches.match(OFFLINE_URL);
           }
