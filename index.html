@@ -1483,127 +1483,105 @@
             lastTouchEnd = now;
         }, false);
 
-        // ============================================
-        // PWA SERVICE WORKER REGISTRATION
-        // ============================================
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('service-worker.js')
-                    .then((registration) => {
-                        console.log('✅ Service Worker registered:', registration);
-                        
-                        // Check for updates
-                        registration.addEventListener('updatefound', () => {
-                            const newWorker = registration.installing;
-                            newWorker.addEventListener('statechange', () => {
-                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                    // New version available
-                                    if (confirm('نسخه جدید موجود است! می‌خواهید به‌روزرسانی کنید؟')) {
-                                        newWorker.postMessage({ type: 'SKIP_WAITING' });
-                                        window.location.reload();
-                                    }
+     <script>
+    // ============================================
+    // PWA SERVICE WORKER REGISTRATION (GitHub Pages)
+    // ============================================
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/penak/service-worker.js')
+                .then((registration) => {
+                    console.log('✅ Service Worker registered:', registration);
+                    
+                    // Check for updates
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                if (confirm('نسخه جدید موجود است! می‌خواهید به‌روزرسانی کنید؟')) {
+                                    newWorker.postMessage({ type: 'SKIP_WAITING' });
+                                    window.location.reload();
                                 }
-                            });
+                            }
                         });
-                    })
-                    .catch((error) => {
-                        console.log('❌ Service Worker registration failed:', error);
                     });
-            });
-        }
-
-        // ============================================
-        // PWA INSTALL PROMPT
-        // ============================================
-        let deferredPrompt;
-        
-        window.addEventListener('beforeinstallprompt', (e) => {
-            // Prevent the mini-infobar from appearing on mobile
-            e.preventDefault();
-            // Save the event so it can be triggered later
-            deferredPrompt = e;
-            
-            // Show install button after 5 seconds
-            setTimeout(() => {
-                showInstallPrompt();
-            }, 5000);
+                })
+                .catch((error) => {
+                    console.log('❌ Service Worker registration failed:', error);
+                });
         });
+    }
 
-        function showInstallPrompt() {
-            if (!deferredPrompt) return;
-            
-            // Check if already installed
-            if (window.matchMedia('(display-mode: standalone)').matches) {
-                return; // Already installed
-            }
-            
-            // Create install banner
-            const installBanner = document.createElement('div');
-            installBanner.className = 'fixed bottom-20 left-4 right-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-xl shadow-2xl z-50 animate-slideUp';
-            installBanner.innerHTML = `
-                <div class="flex items-center justify-between gap-3">
-                    <div class="flex-1">
-                        <div class="font-bold mb-1">📱 نصب برنامه</div>
-                        <div class="text-xs opacity-90">برای دسترسی آسان‌تر، برنامه را نصب کنید</div>
-                    </div>
-                    <div class="flex gap-2">
-                        <button onclick="dismissInstall()" class="touch-btn bg-white bg-opacity-20 px-3 py-2 rounded-lg text-xs font-bold">
-                            بعداً
-                        </button>
-                        <button onclick="installApp()" class="touch-btn bg-white text-blue-600 px-4 py-2 rounded-lg text-xs font-bold">
-                            نصب
-                        </button>
-                    </div>
+    // ============================================
+    // PWA INSTALL PROMPT
+    // ============================================
+    let deferredPrompt;
+    
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+
+        setTimeout(() => {
+            showInstallPrompt();
+        }, 5000);
+    });
+
+    function showInstallPrompt() {
+        if (!deferredPrompt) return;
+        if (window.matchMedia('(display-mode: standalone)').matches) return;
+
+        const installBanner = document.createElement('div');
+        installBanner.className = 'fixed bottom-20 left-4 right-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-xl shadow-2xl z-50 animate-slideUp';
+        installBanner.innerHTML = `
+            <div class="flex items-center justify-between gap-3">
+                <div class="flex-1">
+                    <div class="font-bold mb-1">📱 نصب برنامه</div>
+                    <div class="text-xs opacity-90">برای دسترسی آسان‌تر، برنامه را نصب کنید</div>
                 </div>
-            `;
-            installBanner.id = 'install-banner';
-            document.body.appendChild(installBanner);
+                <div class="flex gap-2">
+                    <button onclick="dismissInstall()" class="touch-btn bg-white bg-opacity-20 px-3 py-2 rounded-lg text-xs font-bold">
+                        بعداً
+                    </button>
+                    <button onclick="installApp()" class="touch-btn bg-white text-blue-600 px-4 py-2 rounded-lg text-xs font-bold">
+                        نصب
+                    </button>
+                </div>
+            </div>
+        `;
+        installBanner.id = 'install-banner';
+        document.body.appendChild(installBanner);
+    }
+
+    window.installApp = async function() {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+
+        if (outcome === 'accepted') {
+            console.log('✅ User accepted the install prompt');
+            showNotification("✅ برنامه در حال نصب است...", "success");
         }
 
-        window.installApp = async function() {
-            if (!deferredPrompt) return;
-            
-            // Show the install prompt
-            deferredPrompt.prompt();
-            
-            // Wait for the user to respond
-            const { outcome } = await deferredPrompt.userChoice;
-            
-            if (outcome === 'accepted') {
-                console.log('✅ User accepted the install prompt');
-                showNotification("✅ برنامه در حال نصب است...", "success");
-            } else {
-                console.log('❌ User dismissed the install prompt');
-            }
-            
-            // Clear the prompt
-            deferredPrompt = null;
-            
-            // Remove banner
-            const banner = document.getElementById('install-banner');
-            if (banner) banner.remove();
-        };
+        deferredPrompt = null;
+        const banner = document.getElementById('install-banner');
+        if (banner) banner.remove();
+    };
 
-        window.dismissInstall = function() {
-            const banner = document.getElementById('install-banner');
-            if (banner) banner.remove();
-            
-            // Don't show again for 7 days
-            localStorage.setItem('install_dismissed', Date.now() + (7 * 24 * 60 * 60 * 1000));
-        };
+    window.dismissInstall = function() {
+        const banner = document.getElementById('install-banner');
+        if (banner) banner.remove();
+        localStorage.setItem('install_dismissed', Date.now() + (7 * 24 * 60 * 60 * 1000));
+    };
 
-        // Detect if app is installed
-        window.addEventListener('appinstalled', () => {
-            console.log('✅ PWA installed successfully!');
-            showNotification("✅ برنامه با موفقیت نصب شد!", "success");
-            deferredPrompt = null;
-        });
+    window.addEventListener('appinstalled', () => {
+        console.log('✅ PWA installed successfully!');
+        showNotification("✅ برنامه با موفقیت نصب شد!", "success");
+        deferredPrompt = null;
+    });
 
-        // Check if running as installed app
-        if (window.matchMedia('(display-mode: standalone)').matches) {
-            console.log('✅ Running as installed PWA');
-            // Add any specific behavior for installed app
-        }
-    </script>
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+        console.log('✅ Running as installed PWA');
+    }
+</script>
 </body>
 </html>
