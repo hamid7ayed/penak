@@ -5,7 +5,6 @@ const OFFLINE_URL = `${BASE_PATH}/index.html`;
 
 // Files to cache for offline use
 const urlsToCache = [
-  `${BASE_PATH}/`,
   `${BASE_PATH}/index.html`,
   `${BASE_PATH}/manifest.json`,
   `${BASE_PATH}/icon-192.png`,
@@ -50,6 +49,7 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
+  // Special handling for Google Script API
   if (event.request.url.includes('script.google.com')) {
     event.respondWith(
       fetch(event.request).catch(() => {
